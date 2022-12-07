@@ -25,8 +25,6 @@ main = do
     bind sock (SockAddrInet 6379 0)
     listen sock 5
     (socket, address) <- accept sock
-    (msg, sa) <- recvFrom socket 2
-    print (socket, "+PONG", sa)
-    _ <- sendAllTo socket "+PONG" sa
+    _ <- send socket "+PONG\r\n"
     print "BYEEEE"
     return ()
