@@ -1,7 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 
-import Control.Monad (forever)
 import Network.Socket
     ( SocketType(..)
     , Family(..)
@@ -18,11 +17,11 @@ import Network.Socket
     )
 import Network.Socket.ByteString
 
-handleSocket :: Socket -> IO ()
-handleSocket sock = forever $ do
-    (conn, address) <- accept sock
-    _ <- send conn "+PONG\r\n"
-    return ()
+respond :: Socket -> IO ()
+respond conn = do
+    resp <- recv conn 1024
+    send conn "+PONG\r\n"
+    respond conn
 
 main :: IO ()
 main = do
@@ -32,6 +31,7 @@ main = do
     setSocketOption sock ReuseAddr 1
     bind sock (SockAddrInet 6379 0)
     listen sock 5
-    handleSocket sock
+    (conn, address) <- accept sock
+    respond conn
     print "BYEEEE"
     return ()
