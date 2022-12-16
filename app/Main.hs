@@ -26,15 +26,10 @@ import Network.Socket.ByteString
 handle :: Socket -> IO ()
 handle conn = do
     resp <- recv conn 1024
-    if resp == ""
-        then
-            close conn
-        else do
-            print ("A", resp)
-            send conn "+PONG\r\n"
-            shutdown conn ShutdownBoth
-            _ <- forkIO $ handle conn
-            return ()
+    send conn "+PONG\r\n"
+    --shutdown conn ShutdownBoth
+    _ <- forkIO $ handle conn
+    return ()
 
 loop :: Socket -> IO ()
 loop sock = do
