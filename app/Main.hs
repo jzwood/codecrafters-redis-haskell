@@ -1,26 +1,27 @@
 {-# LANGUAGE OverloadedStrings #-}
+
 module Main where
 
-import Control.Concurrent
-  ( forkIO
-  , ThreadId
-  )
-import Network.Socket
-    ( SocketType(..)
-    , ShutdownCmd(..)
-    , Family(..)
-    , SocketOption(..)
-    , SockAddr(..)
-    , Socket
-    , shutdown
-    , socket
-    , listen
-    , bind
-    , close
-    , accept
-    , setSocketOption
-    , defaultProtocol
-    )
+import Control.Concurrent (
+    ThreadId,
+    forkIO,
+ )
+import Network.Socket (
+    Family (..),
+    ShutdownCmd (..),
+    SockAddr (..),
+    Socket,
+    SocketOption (..),
+    SocketType (..),
+    accept,
+    bind,
+    close,
+    defaultProtocol,
+    listen,
+    setSocketOption,
+    shutdown,
+    socket,
+ )
 import Network.Socket.ByteString
 
 handle :: Socket -> IO ()
@@ -33,9 +34,9 @@ handle conn = do
 
 loop :: Socket -> IO ()
 loop sock = do
-  (conn, address) <- accept sock
-  handle conn
-  loop sock
+    (conn, address) <- accept sock
+    handle conn
+    loop sock
 
 main :: IO ()
 main = do
