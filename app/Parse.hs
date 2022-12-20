@@ -2,16 +2,17 @@
 
 module Parse where
 
+import Prelude hiding (take, any)
 import Control.Applicative
 import Data.Attoparsec.ByteString.Char8
-import Data.ByteString
+import Data.ByteString.Char8 (ByteString, any, unpack)
 import Data.Word
 
 data RAST
     = SimpleString ByteString
     | -- | Errors String
       -- | Integers [Integer]
-      BulkString Integer ByteString
+      BulkString ByteString
     | Array Integer [RAST]
     deriving (Show)
 
@@ -37,10 +38,14 @@ parseSimpleString =
 parseArrays :: Parser RAST
 parseArrays = Array <$> (char8 '*' *> decimal) <*> many' parseRAST
 
+respSafe :: ByteString -> Parser ByteString
+respSafe cs = if any isEOL cs then fail (unpack cs) else return cs
+
 parseBulkString :: Parser RAST
-parseBulkString = BulkString <$> (char8 '$' *> decimal) <*> takeTill isEOL <* endOfLine
+parseBulkString = BulkString <$> (char8 '$' *> decimal <* endOfLine >>= take >>= respSafe) <* endOfLine
 
 testParse :: IO ()
 testParse = do
-    let res = parse parseSimpleString "+hello\r\n more content"
+    --let res = parse parseSimpleString "+hello\r\n more content"
+    let res = parse parseBulkString "$5\r\nhelllo\r\n"
     print res
