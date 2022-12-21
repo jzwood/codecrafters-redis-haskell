@@ -26,8 +26,11 @@ isEOL _ = False
 upper :: ByteString -> ByteString
 upper = pack . fmap toUpper . unpack
 
-encodeByteString :: ByteString -> ByteString
-encodeByteString bs = cons '$' $ pack ((show . length . unpack $ bs) ++ "\r\n") `append` bs `append` pack "\r\n"
+encodeBulkString :: ByteString -> ByteString
+encodeBulkString bs = cons '$' $ pack ((show . length . unpack $ bs) ++ "\r\n") `append` bs `append` pack "\r\n"
+
+encodeSimpleString :: ByteString -> ByteString
+encodeSimpleString ss = cons '+' $ ss `append` pack "\r\n"
 
 respSafe :: ByteString -> Parser ByteString
 respSafe bs = if any isEOL bs then fail (unpack bs) else return bs
@@ -55,7 +58,13 @@ handle (BulkString bs) = error (unpack bs)
 handle (Array [BulkString req, BulkString resp]) =
     case upper req of
         "ECHO" -> resp
+        "PING" -> resp
         err -> error (unpack err)
+handle (Array [BulkString cmd]) =
+    case upper cmd of
+      "PING" -> "PONG"
+      err -> error (unpack err)
+handle (Array arr) = error $ show arr
 
 runParser :: ByteString -> Either String ByteString
 runParser input = handle <$> parseOnly parseRAST input

@@ -31,7 +31,7 @@ handle conn = do
     print $ P.runParser resp
     case P.runParser resp of
       Right res -> do
-        send conn (P.encodeByteString res)
+        send conn (P.encodeSimpleString res)
         _ <- forkIO $ handle conn
         return ()
       Left _ -> return ()
