@@ -50,12 +50,12 @@ parseArrays :: Parser RAST
 parseArrays = Array <$> (char8 '*' *> decimal <* endOfLine >>= flip count parseRAST)
 
 handle :: RAST -> ByteString
-handle (SimpleString bs) = undefined
-handle (BulkString bs) = undefined
+handle (SimpleString bs) = error (unpack bs)
+handle (BulkString bs) = error (unpack bs)
 handle (Array [BulkString req, BulkString resp]) =
     case upper req of
         "ECHO" -> resp
-        _ -> undefined
+        err -> error (unpack err)
 
 runParser :: ByteString -> Either String ByteString
 runParser input = handle <$> parseOnly parseRAST input
