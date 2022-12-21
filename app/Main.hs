@@ -23,14 +23,18 @@ import Network.Socket (
     socket,
  )
 import Network.Socket.ByteString
+import qualified Parse as P
 
 handle :: Socket -> IO ()
 handle conn = do
     resp <- recv conn 1024
-    print resp
-    send conn "+PONG\r\n"
-    _ <- forkIO $ handle conn
-    return ()
+    print $ P.runParser resp
+    case P.runParser resp of
+      Right res -> do
+        send conn (P.encodeByteString res)
+        _ <- forkIO $ handle conn
+        return ()
+      Left _ -> return ()
 
 loop :: Socket -> IO ()
 loop sock = do
