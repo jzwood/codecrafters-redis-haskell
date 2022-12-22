@@ -2,6 +2,7 @@
 
 module Main where
 
+import Control.Monad (forever)
 import Control.Concurrent (
     ThreadId,
     forkIO,
@@ -28,19 +29,12 @@ import qualified Parse as P
 handle :: Socket -> IO ()
 handle conn = do
     resp <- recv conn 1024
-    print $ P.runParser resp
     case P.runParser resp of
       Right res -> do
         send conn (P.encodeSimpleString res)
         _ <- forkIO $ handle conn
         return ()
-      Left _ -> return ()
-
-loop :: Socket -> IO ()
-loop sock = do
-    (conn, address) <- accept sock
-    handle conn
-    loop sock
+      Left _ -> close conn  -- maybe this breaks things but it seems to make them better
 
 main :: IO ()
 main = do
@@ -50,6 +44,6 @@ main = do
     setSocketOption sock ReuseAddr 1
     bind sock (SockAddrInet 6379 0)
     listen sock 5
-    loop sock
-    print "BYEEEE"
-    return ()
+    forever $ do
+        (conn, address) <- accept sock
+        forkIO $ handle conn

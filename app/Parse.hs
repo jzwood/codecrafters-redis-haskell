@@ -73,6 +73,6 @@ testParse :: IO ()
 testParse = do
     --let res = parse parseSimpleString "+hello\r\n more content"
     --let res = parse parseBulkString "$5\r\nhelllo\r\n"
-    let res = runParser "*2\r\n$4\r\nECHO\r\n$4\r\nPONG\r\n"
-    --let res = parse $4\r\nECHO\r\n
+    --let res = runParser "*2\r\n$4\r\nECHO\r\n$4\r\nPONG\r\n"
+    let res = parseOnly parseRAST "*3\r\n$4\r\nECHO\r\n$4\r\nPONG\r\n+HIII\r\n"
     print $ res
