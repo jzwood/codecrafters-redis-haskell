@@ -21,25 +21,16 @@ import Network.Socket (
     socket,
  )
 import Network.Socket.ByteString (recv, send)
-import Parse (encodeSimpleString, runParser)
+import Parse (runParser)
 import Store (Store, newStore, read, write)
 import qualified Handler
-
---type Store = TVar (Map ByteString ByteString)
-
---newStore :: IO Store
---newStore = newTVar Map.empty
-
---read :: Store -> ByteString -> IO ByteString
---read key = undefined -- readTVarIO :: TVar a -> IO a
-
---write :: Store -> ByteString -> IO Bool
 
 handle :: Socket -> Store -> IO ()
 handle conn store = do
     req <- recv conn 1024
-    case fmap Handler.handle (runParser req) of
-        Right res -> do
+    case runParser req of
+        Right rast -> do
+            res <- Handler.handle store rast
             send conn res
             _ <- forkIO $ handle conn store
             return ()

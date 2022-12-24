@@ -21,12 +21,6 @@ isEOL '\n' = True
 isEOL '\r' = True
 isEOL _ = False
 
-encodeBulkString :: ByteString -> ByteString
-encodeBulkString bs = cons '$' $ pack ((show . length . unpack $ bs) ++ "\r\n") `append` bs `append` pack "\r\n"
-
-encodeSimpleString :: ByteString -> ByteString
-encodeSimpleString ss = cons '+' $ ss `append` pack "\r\n"
-
 respSafe :: ByteString -> Parser ByteString
 respSafe bs = if any isEOL bs then fail (unpack bs) else return bs
 
