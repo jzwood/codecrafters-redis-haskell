@@ -2,14 +2,12 @@
 
 module Main where
 
+import Data.Functor
+import Data.Function
+import Control.Concurrent (ThreadId, forkIO)
 import Control.Monad (forever)
-import Control.Concurrent (
-    ThreadId,
-    forkIO,
- )
 import Network.Socket (
     Family (..),
-    ShutdownCmd (..),
     SockAddr (..),
     Socket,
     SocketOption (..),
@@ -20,21 +18,32 @@ import Network.Socket (
     defaultProtocol,
     listen,
     setSocketOption,
-    shutdown,
     socket,
  )
-import Network.Socket.ByteString
-import qualified Parse as P
+import Network.Socket.ByteString (recv, send)
+import Parse (encodeSimpleString, runParser)
+import Store (Store, newStore, read, write)
+import qualified Handler
 
-handle :: Socket -> IO ()
-handle conn = do
-    resp <- recv conn 1024
-    case P.runParser resp of
-      Right res -> do
-        send conn (P.encodeSimpleString res)
-        _ <- forkIO $ handle conn
-        return ()
-      Left _ -> close conn  -- maybe this breaks things but it seems to make them better
+--type Store = TVar (Map ByteString ByteString)
+
+--newStore :: IO Store
+--newStore = newTVar Map.empty
+
+--read :: Store -> ByteString -> IO ByteString
+--read key = undefined -- readTVarIO :: TVar a -> IO a
+
+--write :: Store -> ByteString -> IO Bool
+
+handle :: Socket -> Store -> IO ()
+handle conn store = do
+    req <- recv conn 1024
+    case fmap Handler.handle (runParser req) of
+        Right res -> do
+            send conn res
+            _ <- forkIO $ handle conn store
+            return ()
+        Left _ -> close conn -- maybe this breaks things but it seems to make them better
 
 main :: IO ()
 main = do
@@ -44,6 +53,7 @@ main = do
     setSocketOption sock ReuseAddr 1
     bind sock (SockAddrInet 6379 0)
     listen sock 5
+    store <- newStore
     forever $ do
         (conn, address) <- accept sock
-        forkIO $ handle conn
+        forkIO $ handle conn store
