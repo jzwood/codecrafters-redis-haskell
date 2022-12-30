@@ -14,9 +14,7 @@ dependencies:
 - attoparsec # can help when implementing the RESP parser
 - base >= 4.7 && < 5
 - bytestring
-- containers
 - network
-- stm
 - time # useful in the expiry stage
 
 executables:

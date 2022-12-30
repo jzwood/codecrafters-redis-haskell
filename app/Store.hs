@@ -1,20 +1,23 @@
 module Store where
 
-import Control.Concurrent.STM (STM)
-import Control.Concurrent.STM.TVar (TVar, newTVarIO, modifyTVar, readTVarIO)
+import Data.IORef (IORef, atomicModifyIORef', modifyIORef', newIORef, readIORef)
 import Data.ByteString.Char8 (ByteString, any, append, cons, pack, unpack)
-import Data.Map (Map)
-import qualified Data.Map as Map
+import Data.List (lookup, filter)
 
-type Store = TVar (Map ByteString ByteString)
+
+type Map = [(ByteString, ByteString)]
+type Store = IORef Map
 
 newStore :: IO Store
-newStore = newTVarIO Map.empty
+newStore = newIORef []
 
 read :: Store -> ByteString -> IO (Maybe ByteString)
 read store key = do
-    map <- readTVarIO store
-    return $ Map.lookup key map
+    map <- readIORef store
+    return $ lookup key map
 
-write :: Store -> ByteString -> ByteString -> STM ()
-write store key val = modifyTVar store $ Map.insert key val
+insert :: ByteString -> ByteString -> Map -> Map
+insert key val map = (key, val) : filter ((==key) . fst) map
+
+write :: Store -> ByteString -> ByteString -> IO ()
+write store key val = modifyIORef' store $ insert key val

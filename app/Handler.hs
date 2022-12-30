@@ -3,7 +3,6 @@
 module Handler where
 
 import Data.Maybe (fromMaybe)
-import Control.Monad.STM (atomically)
 import Data.ByteString.Char8 (ByteString, any, append, cons, pack, unpack)
 import Parse (RAST(..))
 import Store
@@ -32,12 +31,12 @@ handle store (Array [BulkString cmd, BulkString arg1]) =
         "PING" -> handle store (BulkString arg1)
         "GET" -> do
             maybeVal <- Store.read store arg1
-            handle store (SimpleString $ fromMaybe "" maybeVal)
+            handle store (SimpleString $ fromMaybe "(nil)" maybeVal)
         err -> error (unpack err)
 handle store (Array [BulkString req, BulkString arg1, BulkString arg2]) =
     case upper req of
         "SET" -> do
-            _ <- atomically $ Store.write store arg1 arg2
+            _ <- Store.write store arg1 arg2
             handle store (SimpleString "OK")
         err -> error (unpack err)
 handle store (Array arr) = error $ show arr
