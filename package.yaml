@@ -11,10 +11,10 @@ version:             0.1.0.0
 license:             BSD3
 
 dependencies:
-- attoparsec # can help when implementing the RESP parser
 - base >= 4.7 && < 5
-- bytestring
 - network
+- bytestring
+- attoparsec # can help when implementing the RESP parser
 - time # useful in the expiry stage
 
 executables:
