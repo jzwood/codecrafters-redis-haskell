@@ -2,41 +2,50 @@
 
 module Handler where
 
-import Data.Maybe (fromMaybe)
 import Data.ByteString.Char8 (ByteString, any, append, cons, pack, unpack)
-import Parse (RAST(..))
-import Store
 import Data.Char (toUpper)
+import Data.Maybe (fromMaybe)
+import Parse (RAST (..), toResp)
+import Store
 
 upper :: ByteString -> ByteString
 upper = pack . fmap toUpper . unpack
 
-encodeBulkString :: ByteString -> ByteString
-encodeBulkString bs = cons '$' $ pack ((show . length . unpack $ bs) ++ "\r\n") `append` bs `append` pack "\r\n"
-
-encodeSimpleString :: ByteString -> ByteString
-encodeSimpleString ss = cons '+' $ ss `append` pack "\r\n"
+res :: RAST -> IO ByteString
+res = return . toResp
 
 -- HANDLER
 handle :: Store -> RAST -> IO ByteString
-handle store (SimpleString ss) = return $ encodeSimpleString ss
-handle store (BulkString bs) = return $ encodeBulkString bs
-handle store (Array [BulkString cmd]) =
+handle store (Array (BulkString cmd : cmds)) =
     case upper cmd of
-        "PING" -> handle store (SimpleString "PONG")
+        "PING" -> handlePing cmds
+        "ECHO" -> handleEcho cmds
+        "GET" -> handleGet store cmds
+        "SET" -> handleSet store cmds
         err -> error (unpack err)
-handle store (Array [BulkString cmd, BulkString arg1]) =
-    case upper cmd of
-        "ECHO" -> handle store (BulkString arg1)
-        "PING" -> handle store (BulkString arg1)
-        "GET" -> do
-            maybeVal <- Store.read store arg1
-            handle store (SimpleString $ fromMaybe "(nil)" maybeVal)
-        err -> error (unpack err)
-handle store (Array [BulkString req, BulkString arg1, BulkString arg2]) =
-    case upper req of
-        "SET" -> do
-            _ <- Store.write store arg1 arg2
-            handle store (SimpleString "OK")
-        err -> error (unpack err)
-handle store (Array arr) = error $ show arr
+
+handlePing :: [RAST] -> IO ByteString
+handlePing [] = handlePing [BulkString "PONG"]
+handlePing [pong@(BulkString _)] = res pong
+handlePing _ = res $ Error "(error) ERR wrong number of arguments for 'ping' command"
+
+handleEcho :: [RAST] -> IO ByteString
+handleEcho [echo@(BulkString _)] = res echo
+handleEcho _ = res $ Error "(error) ERR wrong number of arguments for 'echo' command"
+
+handleGet :: Store -> [RAST] -> IO ByteString
+handleGet store [BulkString key] = do
+    maybeVal <- Store.read store key
+    res $ maybe (Error "nil") SimpleString maybeVal
+
+handleSet :: Store -> [RAST] -> IO ByteString
+handleSet store [BulkString key, BulkString value] = do
+    _ <- Store.write store key value
+    res (SimpleString "OK")
+
+--handleSet :: Store -> [RAST] -> IO ByteString
+--handleSet store [BulkString key, BulkString value, BulkString opt1, BulkString opt2] = do
+----case upper opt1 of
+----"PX" ->
+--_ <- Store.write store key value
+--res (SimpleString "OK")

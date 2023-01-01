@@ -2,10 +2,11 @@
 
 module Main where
 
-import Data.Functor
-import Data.Function
 import Control.Concurrent (ThreadId, forkIO)
 import Control.Monad (forever)
+import Data.Function
+import Data.Functor
+import qualified Handler
 import Network.Socket (
     Family (..),
     SockAddr (..),
@@ -23,7 +24,6 @@ import Network.Socket (
 import Network.Socket.ByteString (recv, send)
 import Parse (runParser)
 import Store (Store, newStore, read, write)
-import qualified Handler
 
 handle :: Socket -> Store -> IO ()
 handle conn store = do
@@ -34,7 +34,7 @@ handle conn store = do
             send conn res
             _ <- forkIO $ handle conn store
             return ()
-        Left _ -> close conn -- maybe this breaks things but it seems to make them better
+        Left _ -> close conn
 
 main :: IO ()
 main = do

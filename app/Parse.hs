@@ -9,11 +9,18 @@ import Prelude hiding (any, take)
 
 data RAST
     = SimpleString ByteString
-    | -- | Errors String
-      -- | Integers [Integer]
+    | Error ByteString
+    | -- | Integers [Integer]
       BulkString ByteString
     | Array [RAST]
-    deriving (Show)
+
+class Resp rast where
+    toResp :: rast -> ByteString
+
+instance Resp RAST where
+    toResp (SimpleString ss) = cons '+' $ ss `append` pack "\r\n"
+    toResp (BulkString bs) = cons '$' $ pack ((show . length . unpack $ bs) ++ "\r\n") `append` bs `append` pack "\r\n"
+    toResp (Error es) = cons '-' $ es `append` pack "\r\n"
 
 -- UTILS
 isEOL :: Char -> Bool

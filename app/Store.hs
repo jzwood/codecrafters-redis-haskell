@@ -1,9 +1,10 @@
+{-# LANGUAGE TupleSections #-}
+
 module Store where
 
-import Data.IORef (IORef, atomicModifyIORef', modifyIORef', newIORef, readIORef)
 import Data.ByteString.Char8 (ByteString, any, append, cons, pack, unpack)
-import Data.List (lookup, filter)
-
+import Data.IORef (IORef, atomicModifyIORef', newIORef, readIORef)
+import Data.List (filter, lookup)
 
 type Map = [(ByteString, ByteString)]
 type Store = IORef Map
@@ -16,8 +17,14 @@ read store key = do
     map <- readIORef store
     return $ lookup key map
 
+remove :: ByteString -> Map -> Map
+remove key = filter ((== key) . fst)
+
 insert :: ByteString -> ByteString -> Map -> Map
-insert key val map = (key, val) : filter ((==key) . fst) map
+insert key val map = (key, val) : remove key map
 
 write :: Store -> ByteString -> ByteString -> IO ()
-write store key val = modifyIORef' store $ insert key val
+write store key val = atomicModifyIORef' store $ (,()) . insert key val
+
+evict :: Store -> ByteString -> IO ()
+evict store key = atomicModifyIORef' store $ (,()) . remove key

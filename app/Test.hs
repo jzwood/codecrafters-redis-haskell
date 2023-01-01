@@ -3,7 +3,7 @@
 module Test where
 
 import Data.Attoparsec.ByteString.Char8 (parseOnly)
-import Parse (runParser, parseRAST)
+import Parse (parseRAST, runParser)
 
 -- TEST
 res1 = runParser "*2\r\n$4\r\nECHO\r\n$4\r\nPONG\r\n"
