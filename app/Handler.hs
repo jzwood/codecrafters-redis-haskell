@@ -1,14 +1,15 @@
-{-# LANGUAGE OverloadedStrings, NumericUnderscores #-}
+{-# LANGUAGE NumericUnderscores #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Handler where
 
-import Data.ByteString.Char8 (ByteString, any, append, cons, pack, unpack)
 import Control.Concurrent (ThreadId, forkIO, threadDelay)
-import Data.Char (toUpper, isDigit)
+import Data.ByteString.Char8 (ByteString, any, append, cons, pack, unpack)
+import Data.Char (isDigit, toUpper)
 import Data.Maybe (fromMaybe)
 import Parse (RAST (..), toResp)
-import Text.Read (readMaybe)
 import Store
+import Text.Read (readMaybe)
 
 upper :: ByteString -> ByteString
 upper = pack . fmap toUpper . unpack
@@ -36,8 +37,8 @@ handle store (Array (BulkString cmd : cmds)) =
         err -> error (unpack err)
 
 handlePing :: [RAST] -> IO ByteString
-handlePing [] = handlePing [BulkString "PONG"]
-handlePing [pong@(BulkString _)] = res pong
+handlePing [] = handlePing [SimpleString "PONG"]
+handlePing [pong@(SimpleString _)] = res pong
 handlePing _ = res $ Error "(error) ERR wrong number of arguments for 'ping' command"
 
 handleEcho :: [RAST] -> IO ByteString
@@ -47,17 +48,17 @@ handleEcho _ = res $ Error "(error) ERR wrong number of arguments for 'echo' com
 handleGet :: Store -> [RAST] -> IO ByteString
 handleGet store [BulkString key] = do
     maybeVal <- Store.read store key
-    res $ maybe (Error "nil") SimpleString maybeVal
+    res $ maybe NullBulkString SimpleString maybeVal
 
 handleSet :: Store -> [RAST] -> IO ByteString
 handleSet store [BulkString key, BulkString value] = do
     _ <- Store.write store key value
     res (SimpleString "OK")
 handleSet store [BulkString key, BulkString value, BulkString opt1, BulkString opt2] = do
-  case (upper opt1, toInt opt2) of
-    ("PX", Just milliseconds) -> do
-      _ <- forkIO $ do
-        threadDelay $ microsecondsPerMilliseconds * milliseconds
-        evict store key
-      handleSet store [BulkString key, BulkString value]
-    _ -> res (SimpleString "OK")
+    case (upper opt1, toInt opt2) of
+        ("PX", Just milliseconds) -> do
+            _ <- forkIO $ do
+                threadDelay $ microsecondsPerMilliseconds * milliseconds
+                evict store key
+            handleSet store [BulkString key, BulkString value]
+        _ -> res (SimpleString "OK")
