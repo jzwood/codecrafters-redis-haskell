@@ -13,6 +13,7 @@ data RAST
     | -- | Integers [Integer]
       BulkString ByteString
     | Array [RAST]
+    deriving (Show)
 
 class Resp rast where
     toResp :: rast -> ByteString
