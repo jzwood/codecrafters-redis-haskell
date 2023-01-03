@@ -54,11 +54,12 @@ handleSet :: Store -> [RAST] -> IO ByteString
 handleSet store [BulkString key, BulkString value] = do
     _ <- Store.write store key value
     res (SimpleString "OK")
-handleSet store [BulkString key, BulkString value, BulkString opt1, BulkString opt2] = do
+handleSet store [BulkString key, BulkString value, BulkString opt1, BulkString opt2] =
     case (upper opt1, toInt opt2) of
         ("PX", Just milliseconds) -> do
             _ <- forkIO $ do
                 threadDelay $ microsecondsPerMilliseconds * milliseconds
                 evict store key
             handleSet store [BulkString key, BulkString value]
-        _ -> res (SimpleString "OK")
+        _ -> res $ Error "(error) ERR  syntax"
+handleSet _ _ = res $ Error "(error) ERR  syntax"
